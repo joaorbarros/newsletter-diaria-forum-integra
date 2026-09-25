@@ -1,19 +1,30 @@
 name: Newsletter Diária - Fórum Integra
 
+# O GitHub Actions usa horário UTC. Brasília = UTC-3, então:
+#   12:07 UTC = 09:07 em Brasília.
+# Minutos "redondos" (:00, :30) são os mais congestionados no GitHub e
+# costumam atrasar. Um minuto "quebrado" ajuda o e-mail a chegar antes
+# das 09:30. O GitHub não garante horário exato em agendamentos.
 on:
   schedule:
-    - cron: "30 12 * * 1-5"
+    - cron: "7 12 * * 1-5"
   workflow_dispatch: {}
+
+# "actions: write" é necessário para o passo que mantém o agendamento ativo.
+permissions:
+  contents: read
+  actions: write
 
 jobs:
   gerar-e-enviar-newsletter:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Baixar código do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -37,7 +48,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Enviar por e-mail
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@v22
         with:
           server_address: ${{ secrets.MAIL_SERVER }}
           server_port: ${{ secrets.MAIL_PORT }}
@@ -49,8 +60,16 @@ jobs:
           body: ${{ steps.ler_mensagem.outputs.conteudo }}
 
       - name: Salvar a mensagem como artefato (backup)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: newsletter-do-dia
           path: src/saidas/*.txt
           retention-days: 30
+
+      # O GitHub desativa agendamentos após 60 dias sem atividade.
+      # Reativar o workflow pela API a cada execução reinicia essa contagem.
+      - name: Manter o agendamento ativo
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/newsletter.yml/enable"
