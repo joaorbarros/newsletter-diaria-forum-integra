@@ -64,7 +64,7 @@ def executar_pipeline() -> list[str]:
     print(f"       -> {len(noticias_selecionadas)} notícia(s) selecionada(s).")
 
     print("[2/5] Resolvendo o link real das matérias (removendo o redirecionamento do Google Notícias)...")
-        noticias_selecionadas = resolver_e_filtrar(noticias_selecionadas, config.META_TOTAL_NOTICIAS)
+    noticias_selecionadas = resolver_e_filtrar(noticias_selecionadas, config.META_TOTAL_NOTICIAS)
 
     print(f"[3/5] Processando links (encurtador {'ativado' if config.ATIVAR_ENCURTADOR_DE_LINK else 'desativado -- usando link original'})...")
     noticias_selecionadas = encurtar_links_das_noticias(
