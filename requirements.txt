@@ -1,4 +1,4 @@
 feedparser>=6.0.0
 python-dateutil>=2.8.0
 requests>=2.31.0
-googlenewsdecoder>=0.1.7
+googlenewsdecoder==0.2.1
