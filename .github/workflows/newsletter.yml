@@ -56,7 +56,7 @@ jobs:
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "Newsletter Diária - Fórum Integra"
           to: contato@forumintegra.org
-          from: "Newsletter Fórum Integra"
+          from: "Newsletter Fórum Integra <${{ secrets.MAIL_USERNAME }}>"
           body: ${{ steps.ler_mensagem.outputs.conteudo }}
 
       - name: Salvar a mensagem como artefato (backup)
