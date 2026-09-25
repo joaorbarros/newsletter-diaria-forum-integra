@@ -98,47 +98,6 @@ def buscar_por_termo(termo: str, max_resultados: int = 15) -> list[dict]:
     return resultados
 
 
-def _montar_ordem_round_robin(categorias: dict) -> list[tuple[str, str]]:
-    """
-    Monta a ordem de busca alternando entre categorias, em vez de
-    esgotar todos os termos de uma categoria antes de passar para a
-    próxima.
-
-    Sem isso, como a busca PARA assim que atinge a meta, a primeira
-    categoria do dicionário quase sempre "consome" toda a meta sozinha
-    -- e as outras categorias nunca chegam a ser buscadas. O resultado
-    prático era a newsletter ficar presa no mesmo assunto dominante do
-    dia após dia.
-
-    Com o round-robin, a ordem passa a ser: 1º termo de cada categoria,
-    depois o 2º termo de cada categoria, e assim por diante -- garantindo
-    que todas as categorias tenham chance de contribuir antes da meta
-    ser atingida.
-
-    Returns:
-        Lista de tuplas (nome_categoria, termo), na ordem em que devem
-        ser buscadas.
-    """
-    listas_de_termos = [
-        [(nome_categoria, termo) for termo in termos]
-        for nome_categoria, termos in categorias.items()
-    ]
-
-    ordem = []
-    indice_termo = 0
-    while True:
-        adicionou_algo = False
-        for lista in listas_de_termos:
-            if indice_termo < len(lista):
-                ordem.append(lista[indice_termo])
-                adicionou_algo = True
-        if not adicionou_algo:
-            break
-        indice_termo += 1
-
-    return ordem
-
-
 def buscar_ate_atingir_meta(
     categorias: dict,
     meta_total: int = 10,
@@ -146,9 +105,8 @@ def buscar_ate_atingir_meta(
     max_por_termo: int = 15,
 ) -> list[dict]:
     """
-    Percorre as categorias/termos configurados em ordem round-robin
-    (alternando entre categorias, não esgotando uma por vez), aplicando
-    em cada notícia encontrada, na hora:
+    Percorre as categorias/termos configurados, aplicando em cada notícia
+    encontrada, na hora:
       1. Filtro de janela de tempo (descarta notícias antigas)
       2. Filtro de duplicata (compara com o que já foi coletado)
 
@@ -160,33 +118,35 @@ def buscar_ate_atingir_meta(
         com sua categoria.
     """
     coletadas: list[dict] = []
-    ordem_de_busca = _montar_ordem_round_robin(categorias)
 
-    for nome_categoria, termo in ordem_de_busca:
-        print(f"[Buscador] [{nome_categoria}] buscando: '{termo}'...")
-        resultados = buscar_por_termo(termo, max_por_termo)
+    for nome_categoria, termos in categorias.items():
+        print(f"[Buscador] Categoria: {nome_categoria}")
 
-        for noticia in resultados:
+        for termo in termos:
+            print(f"   buscando: '{termo}'...")
+            resultados = buscar_por_termo(termo, max_por_termo)
+
+            for noticia in resultados:
+                if len(coletadas) >= meta_total:
+                    break
+
+                if not dentro_da_janela_de_tempo(noticia["data_publicacao"], janela_horas):
+                    continue
+
+                noticia["categoria"] = nome_categoria
+
+                eh_duplicada = any(
+                    sao_a_mesma_noticia(noticia, existente)
+                    for existente in coletadas
+                )
+                if not eh_duplicada:
+                    coletadas.append(noticia)
+
             if len(coletadas) >= meta_total:
-                break
+                print(f"[Buscador] Meta de {meta_total} notícia(s) atingida. Parando busca.")
+                return coletadas
 
-            if not dentro_da_janela_de_tempo(noticia["data_publicacao"], janela_horas):
-                continue
-
-            noticia["categoria"] = nome_categoria
-
-            eh_duplicada = any(
-                sao_a_mesma_noticia(noticia, existente)
-                for existente in coletadas
-            )
-            if not eh_duplicada:
-                coletadas.append(noticia)
-
-        if len(coletadas) >= meta_total:
-            print(f"[Buscador] Meta de {meta_total} notícia(s) atingida. Parando busca.")
-            return coletadas
-
-        time.sleep(PAUSA_ENTRE_BUSCAS_SEGUNDOS)
+            time.sleep(PAUSA_ENTRE_BUSCAS_SEGUNDOS)
 
     if len(coletadas) < meta_total:
         print(

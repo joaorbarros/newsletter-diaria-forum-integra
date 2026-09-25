@@ -44,7 +44,7 @@ from datetime import datetime
 
 import config
 from buscador import buscar_ate_atingir_meta
-from resolvedor_link import resolver_e_filtrar
+from resolver_link import resolver_links_das_noticias
 from encurtador import encurtar_links_das_noticias
 from organizador import organizar_por_categoria
 from formatador_whatsapp import gerar_mensagem_completa
@@ -57,14 +57,14 @@ def executar_pipeline() -> list[str]:
     )
     noticias_selecionadas = buscar_ate_atingir_meta(
         config.CATEGORIAS_DE_BUSCA,
-        meta_total=int(META_TOTAL_NOTICIAS * 1.5),
+        meta_total=config.META_TOTAL_NOTICIAS,
         janela_horas=config.JANELA_HORAS_MAXIMA,
         max_por_termo=config.MAX_RESULTADOS_POR_TERMO,
     )
     print(f"       -> {len(noticias_selecionadas)} notícia(s) selecionada(s).")
 
     print("[2/5] Resolvendo o link real das matérias (removendo o redirecionamento do Google Notícias)...")
-       noticias_selecionadas = resolver_e_filtrar(noticias_selecionadas, META_TOTAL_NOTICIAS)
+    noticias_selecionadas = resolver_links_das_noticias(noticias_selecionadas)
 
     print(f"[3/5] Processando links (encurtador {'ativado' if config.ATIVAR_ENCURTADOR_DE_LINK else 'desativado -- usando link original'})...")
     noticias_selecionadas = encurtar_links_das_noticias(

@@ -67,7 +67,6 @@ config.py (categorias, termos, janela de tempo, meta)
 
 - **Janela de tempo:** só considera notícias publicadas dentro de `JANELA_HORAS_MAXIMA` (padrão: 48h). Notícias sem data reconhecível são descartadas por segurança.
 - **Meta de notícias:** a busca **para automaticamente** assim que atingir `META_TOTAL_NOTICIAS` (padrão: 10) — não continua buscando os termos restantes.
-- **Busca em round-robin entre categorias:** a ordem de busca alterna entre categorias (1º termo de cada categoria, depois o 2º termo de cada uma, e assim por diante) em vez de esgotar uma categoria inteira antes de passar para a próxima. Sem isso, como a busca já para ao atingir a meta, a primeira categoria do `config.py` sempre "consumia" toda a meta sozinha, e a newsletter ficava presa no mesmo assunto dominante dia após dia — mesmo com o filtro de duplicatas funcionando perfeitamente.
 - **Encurtamento de link:** feito só nas notícias finais selecionadas (não nas descartadas), usando a API gratuita do TinyURL. Se o serviço estiver fora do ar, o link original é usado sem quebrar o pipeline.
 
 ## Agendamento automático (GitHub Actions)
